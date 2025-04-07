@@ -18,7 +18,7 @@ def fill_polygon(img, vertices):
     # tetagmenh.
     active_edges = np.zeros((3,2,2))
     active_points = np.zeros((3,2))
-    mk = np.zeros(3)
+    m = np.zeros(3)
 
     for k in range(0, K): 
         print(k)
@@ -26,12 +26,12 @@ def fill_polygon(img, vertices):
         ymin[k] = min(vertices[k-1][1], vertices[k][1])
         xmax[k] = max(vertices[k-1][0], vertices[k][0])
         xmin[k] = min(vertices[k-1][0], vertices[k][0])
-        m[k] = (vertices[k][1] - vertices[k-1][1]) / (vertices[k][0] - vertices[k-1][0]
+        m[k] = (vertices[k][1] - vertices[k-1][1]) / (vertices[k][0] - vertices[k-1][0])
 
+    
     y_total_min = np.astype(min(ymin), int)
     y_total_max = np.astype(max(ymax), int)
     y = y_total_min - 1
-    print('y total min = ', y_total_min)
 
     # vriskoume lista energwn akmwn
     for k in range(0, K):
@@ -51,6 +51,7 @@ def fill_polygon(img, vertices):
             active_edges[k][0][0] = -1 
             active_edges[k][1][0] = -1 
 
+    print('mk = ', m)
     print('active edges = ', active_edges)
 
     # vriskoume lista energwn oriakwn shmeiwn
@@ -61,7 +62,7 @@ def fill_polygon(img, vertices):
             V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
             active_points[k][0] = ymin[k]
         # protash 3
-        elif active_points[k][0] <> -1:
+        elif active_points[k][0] != -1:
             active_points[k][0] = active_points[k][0] + m[k]
         # exclude horizontal lines, protash 2
         if ymin[k] == ymax[k]:
@@ -94,8 +95,24 @@ def fill_polygon(img, vertices):
                 active_edges[k][0][0] = 0 
                 active_edges[k][1][0] = 0 
         
+        # vriskoume lista energwn oriakwn shmeiwn
+        for k in range(0, K):
+            # protash 1
+            if ymin[k] == y + 1:
+                active_points[k][1] = ymin[k]
+                V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
+                active_points[k][0] = ymin[k]
+            # protash 3
+            elif active_points[k][0] != -1:
+                active_points[k][0] = active_points[k][0] + m[k]
+            # exclude horizontal lines, protash 2
+            if ymin[k] == ymax[k]:
+                active_points[k][1] = -1
+                active_points[k][0] = -1
+                
         print('y = ', y+1)
         print('active edges = ', active_edges)
+        print('active points = ', active_points)
 
 
 # algorithmos plhrwshs polygonwn
