@@ -1,14 +1,22 @@
 import vec_inter
 import numpy as np
 
+def drawpixel(x, y):
+    return 0
+
 def fill_polygon(img, vertices):
     M = img # rows
-    N = img # columns
+    N = 100 # columns
     K = 3 # a triangle has 3 vertices
     ymax = np.zeros(3)
     ymin = np.zeros(3)
     xmax = np.zeros(3)
     xmin = np.zeros(3)
+    # prwth diastash gia plevres. max 2 plevres mporoun na einai energes th fora logw
+    # kyrtothtas. defterh diastash einai ta shmeia pou orizoun tis plevres. 
+    # trith diastash einai oi syntagmenes tou kathe shmeiou. 0 gia tetmhmenh, 1 gia 
+    # tetagmenh.
+    active_edges = np.zeros((3,2,2))
 
     for k in range(0, K): 
         print(k)
@@ -16,10 +24,59 @@ def fill_polygon(img, vertices):
         ymin[k] = min(vertices[k-1][1], vertices[k][1])
         xmax[k] = max(vertices[k-1][0], vertices[k][0])
         xmin[k] = min(vertices[k-1][0], vertices[k][0])
-    print('ymax = ', ymax)
-    print('ymin = ', ymin)
-    print('xmax = ', xmax)
-    print('xmin = ', xmin)
+
+    y_total_min = np.astype(min(ymin), int)
+    y_total_max = np.astype(max(ymax), int)
+    y = y_total_min - 1
+    print('y total min = ', y_total_min)
+
+    # vriskoume lista energwn akmwn
+    for k in range(0, K):
+        if ymin[k] == y + 1:
+            active_edges[k][0][1] = ymax[k]
+            active_edges[k][1][1] = ymin[k]
+            # pws kseroume poia tetagmenh antistoixei se poia tetmhmenh; grammikh paremvolh
+            # "metaksy" dyo shmeiwn, alla h paremvolh ginetai panw se ena apo ta dyo shmeia,
+            # etsi vriskoume poies htan oi arxikes tetmhmenes
+            V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymax[k], 2)
+            active_edges[k][0][0] = p[0] 
+            V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
+            active_edges[k][1][0] = p[0] 
+        if ymax[k] == y:
+            active_edges[k][0][1] = 0
+            active_edges[k][1][1] = 0
+            active_edges[k][0][0] = 0 
+            active_edges[k][1][0] = 0 
+
+    print('active edges = ', active_edges)
+    # vriskoume lista energwn oriakwn shmeiwn
+
+    for y in range(y_total_min, y_total_max):
+        # sort lista oriakwn shmeiwn kata x (;;;) ;;__;;
+        cross_count = 0
+        for x in range(0, N):
+            drawpixel(x,y)
+
+        # vriskoume lista energwn akmwn
+        for k in range(0, K):
+            if ymin[k] == y + 1:
+                active_edges[k][0][1] = ymax[k]
+                active_edges[k][1][1] = ymin[k]
+                # pws kseroume poia tetagmenh antistoixei se poia tetmhmenh; grammikh paremvolh
+                # "metaksy" dyo shmeiwn, alla h paremvolh ginetai panw se ena apo ta dyo shmeia,
+                # etsi vriskoume poies htan oi arxikes tetmhmenes
+                V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymax[k], 2)
+                active_edges[k][0][0] = p[0] 
+                V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
+                active_edges[k][1][0] = p[0] 
+            if ymax[k] == y:
+                active_edges[k][0][1] = 0
+                active_edges[k][1][1] = 0
+                active_edges[k][0][0] = 0 
+                active_edges[k][1][0] = 0 
+        
+        print('y = ', y+1)
+        print('active edges = ', active_edges)
 
 
 # algorithmos plhrwshs polygonwn
@@ -46,3 +103,5 @@ def fill_polygon(img, vertices):
 #end
 #end
 #% Τέλος σάρωσης γραμμής y
+# Ενημερώνουμε αναδρομικά τη <Λίστα Ενεργών Ακμών>
+# Ενημερώνουμε αναδρομικά τη <Λίστα Ενεργών Οριακών Σημείων>

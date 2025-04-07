@@ -13,7 +13,7 @@ def vector_inter(p1, p2, V1, V2, coord, dim):
         p[1] = coord
 
     V = lamda * V1 + (1-lamda) * V2
-    return V
+    return V, p
 
 
 
