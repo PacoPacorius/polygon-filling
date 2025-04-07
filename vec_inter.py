@@ -29,4 +29,4 @@ coord = 4
 dim = 1
 p = vector_inter(p1, p2, V1, V2, coord, dim)
 
-print(p)
+#print(p)
