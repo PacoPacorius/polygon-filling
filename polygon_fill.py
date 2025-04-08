@@ -1,5 +1,6 @@
 import vec_inter
 import numpy as np
+import math
 
 def drawpixel(x, y):
     return 0
@@ -17,16 +18,21 @@ def fill_polygon(img, vertices):
     # trith diastash einai oi syntagmenes tou kathe shmeiou. 0 gia tetmhmenh, 1 gia 
     # tetagmenh.
     active_edges = np.zeros((3,2,2))
+    active_edges.fill(-1)
     active_points = np.zeros((3,2))
+    active_points.fill(-1)
     m = np.zeros(3)
 
     for k in range(0, K): 
-        print(k)
+        #print(k)
         ymax[k] = max(vertices[k-1][1], vertices[k][1])
         ymin[k] = min(vertices[k-1][1], vertices[k][1])
         xmax[k] = max(vertices[k-1][0], vertices[k][0])
         xmin[k] = min(vertices[k-1][0], vertices[k][0])
-        m[k] = (vertices[k][1] - vertices[k-1][1]) / (vertices[k][0] - vertices[k-1][0])
+        if vertices[k][0] != vertices[k-1][0]:
+            m[k] = (vertices[k][1] - vertices[k-1][1]) / (vertices[k][0] - vertices[k-1][0])
+        else:
+            m[k] = math.inf
 
     
     y_total_min = np.astype(min(ymin), int)
@@ -35,7 +41,7 @@ def fill_polygon(img, vertices):
 
     # vriskoume lista energwn akmwn
     for k in range(0, K):
-        if ymin[k] == y + 1:
+        if ymin[k] == y + 1 and ymax[k] != ymin[k]:
             active_edges[k][0][1] = ymax[k]
             active_edges[k][1][1] = ymin[k]
             # pws kseroume poia tetagmenh antistoixei se poia tetmhmenh; grammikh paremvolh
@@ -51,8 +57,6 @@ def fill_polygon(img, vertices):
             active_edges[k][0][0] = -1 
             active_edges[k][1][0] = -1 
 
-    print('mk = ', m)
-    print('active edges = ', active_edges)
 
     # vriskoume lista energwn oriakwn shmeiwn
     for k in range(0, K):
@@ -60,17 +64,20 @@ def fill_polygon(img, vertices):
         if ymin[k] == y + 1:
             active_points[k][1] = ymin[k]
             V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
-            active_points[k][0] = ymin[k]
+            active_points[k][0] = p[0]
         # protash 3
-        elif active_points[k][0] != -1:
-            active_points[k][0] = active_points[k][0] + m[k]
+        elif active_points[k][0] != -1 and m[k] != math.inf:
+            active_points[k][0] = active_points[k][0] + 1/m[k]
         # exclude horizontal lines, protash 2
         if ymin[k] == ymax[k]:
             active_points[k][1] = -1
             active_points[k][0] = -1
             
-    print('active points = ', active_points)
+    #print('mk = ', m)
+    #print('active edges = ', active_edges)
+    #print('active points = ', active_points)
 
+    ### polygon fill loop ###
     for y in range(y_total_min, y_total_max):
         # sort lista oriakwn shmeiwn kata x (;;;) ;;__;;
         cross_count = 0
@@ -79,7 +86,7 @@ def fill_polygon(img, vertices):
 
         # enhmerwnoume lista energwn akmwn
         for k in range(0, K):
-            if ymin[k] == y + 1:
+            if ymin[k] == y + 1 and ymax[k] != ymin[k]:
                 active_edges[k][0][1] = ymax[k]
                 active_edges[k][1][1] = ymin[k]
                 # pws kseroume poia tetagmenh antistoixei se poia tetmhmenh; grammikh paremvolh
@@ -90,29 +97,31 @@ def fill_polygon(img, vertices):
                 V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
                 active_edges[k][1][0] = p[0] 
             if ymax[k] == y:
-                active_edges[k][0][1] = 0
-                active_edges[k][1][1] = 0
-                active_edges[k][0][0] = 0 
-                active_edges[k][1][0] = 0 
+                active_edges[k][0][1] = -1
+                active_edges[k][1][1] = -1
+                active_edges[k][0][0] = -1
+                active_edges[k][1][0] = -1
         
-        # vriskoume lista energwn oriakwn shmeiwn
+        # enhmerwnoume lista energwn oriakwn shmeiwn
         for k in range(0, K):
             # protash 1
-            if ymin[k] == y + 1:
+            if ymin[k] == y + 1 and ymax[k] != ymin[k]:
                 active_points[k][1] = ymin[k]
                 V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
-                active_points[k][0] = ymin[k]
+                active_points[k][0] = p[0]
             # protash 3
             elif active_points[k][0] != -1:
-                active_points[k][0] = active_points[k][0] + m[k]
+                if m[k] != math.inf:
+                    active_points[k][0] = active_points[k][0] + 1/m[k]
+                active_points[k][1] = y + 1
             # exclude horizontal lines, protash 2
-            if ymin[k] == ymax[k]:
+            if y == ymax[k]:
                 active_points[k][1] = -1
                 active_points[k][0] = -1
                 
-        print('y = ', y+1)
-        print('active edges = ', active_edges)
-        print('active points = ', active_points)
+        #print('y = ', y+1)
+        #print('active edges = ', active_edges)
+        #print('active points = ', active_points)
 
 
 # algorithmos plhrwshs polygonwn
