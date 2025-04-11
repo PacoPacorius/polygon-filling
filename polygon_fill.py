@@ -3,9 +3,6 @@ import numpy as np
 import cv2 as cv
 import math
 
-def drawpixel(img, rows, cols):
-    img[img.shape[0] - rows][cols] = 0
-    return 0
 
 
 def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
@@ -58,7 +55,7 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
             active_points[k][1] = -1
             active_points[k][0] = -1
 
-def fill_polygon(img, vertices):
+def render_img(img, vertices, vcolors, depth, shading):
     M, N = img.shape
     K = 3 # a triangle has 3 vertices
     ymax = np.zeros(3)
@@ -132,29 +129,10 @@ def fill_polygon(img, vertices):
         print('active points = ', active_points)
 
 
-# algorithmos plhrwshs polygonwn
-#
-#for k=0:1:K-1
-#Βρίσκουμε τα xkmin, xkmax, ykmin, ykmax της ακμής k
-#end
-#ymin = min_k {y0min, y1min, ...}
-#ymax = max_k {y0max, y1max, ...}
-#Βρίσκουμε τη <Λίστα Ενεργών Ακμών> για την Γραμμή Σάρωσης y == ymin;
-#Βρίσκουμε τη <Λίστα Ενεργών Οριακών Σημείων> για την Γραμμή Σάρωσης y == ymin;
-#for y=ymin:1:ymax
-#Διατάσσουμε τη <Λίστα Ενεργών Οριακών Σημείων> ώς προς x
-#cross_count=0;
-#% Αρχικοποιούμε το πλήθος Ενεργών Οριακών Σημείων
-#% που έχουν ήδη σαρωθεί
-#% Αρχή σάρωσης γραμμής y
-#for x=0:1:N
-#if x == τετμημένη κάποιου Ενεργού Οριακού Σημείου
-#cross_count = cross_count + 1;
-#end
-#if (cross_count είναι ΠΕΡΙΤΤΟ)
-#drawpixel(x,y)
-#end
-#end
-#% Τέλος σάρωσης γραμμής y
-# Ενημερώνουμε αναδρομικά τη <Λίστα Ενεργών Ακμών>
-# Ενημερώνουμε αναδρομικά τη <Λίστα Ενεργών Οριακών Σημείων>
+def f_shading(img, vertices, vcolors):
+    for
+    return upd_img
+
+def drawpixel(img, rows, cols):
+    img[img.shape[0] - rows][cols] = 0
+    return 0
