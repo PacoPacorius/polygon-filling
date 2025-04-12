@@ -17,7 +17,7 @@ def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
             active_edges[k][0][0] = p[0] 
             V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
             active_edges[k][1][0] = p[0] 
-        if ymax[k] == y+1:
+        if ymax[k] == y + 1:
             active_edges[k][0][1] = -1
             active_edges[k][1][1] = -1
             active_edges[k][0][0] = -1 
@@ -53,7 +53,7 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
         elif active_points[k][0] != -1 and m[k] != math.inf:
             active_points[k][0] = active_points[k][0] + 1/m[k]
     # exclude horizontal lines, protash 2
-        if ymin[k] == ymax[k] or ymax[k] == y+1:
+        if ymin[k] == ymax[k] or ymax[k] == y + 1:
             active_points[k][1] = -1
             active_points[k][0] = -1
 
@@ -64,6 +64,8 @@ def render_img(vertices, vcolors, depth, shading):
     M = img.shape[0]
     N = img.shape[1]
     K = 3 # a triangle has 3 vertices
+    norm_vertices = np.zeros((3, 2))
+    uv = np.zeros((3, 2))
     ymax = np.zeros(3)
     ymin = np.zeros(3)
     xmax = np.zeros(3)
@@ -121,7 +123,10 @@ def render_img(vertices, vcolors, depth, shading):
                 if shading == "f":
                     img = f_shading(img, vertices, vcolors, y, x)
                 elif shading == "t":
-                    t_shading(img, vertices, uv, textImg)
+                    for k in range(0, K):
+                        uv[k][0] = vertices[k][0] / M
+                        uv[k][1] = vertices[k][1] / N
+                    img = t_shading(img, vertices, uv, y, x, cv.imread('fresque-saint-georges-2452226686.jpg'))
                 elif shading == "d":
                     t_shading()
                     #drawpixel(img, y, x)
@@ -133,9 +138,9 @@ def render_img(vertices, vcolors, depth, shading):
         # enhmerwnoume lista energwn oriakwn shmeiwn
         find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, ymin, ymax, y)
                 
-        cv.imshow('win', img)
-        cv.moveWindow('window', 0, 0)
-        cv.waitKey(0)
+        #cv.imshow('win', img)
+        #cv.moveWindow('window', 0, 0)
+        #cv.waitKey(0)
         print('y = ', y+1)
         print('active edges = ', active_edges)
         print('active points = ', active_points)
@@ -157,7 +162,18 @@ def f_shading(img, vertices, vcolors, rows, cols):
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
     return img
 
-def t_shading(img, vertices, uv, textImg):
+def t_shading(img, vertices, uv, rows, cols, textImg):
+    K = textImg.shape[0]
+    L = textImg.shape[1]
+    M = img.shape[0]
+    N = img.shape[1]
+    # normalize trangle points to texture image coordinates
+    text_cols = K/M * cols
+    text_rows = L/N * rows
+    text_cols = math.ceil(text_cols - 0.5)
+    text_rows = math.ceil(text_rows - 0.5)
+
+    img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
     return img
 
 def drawpixel(img, rows, cols):
