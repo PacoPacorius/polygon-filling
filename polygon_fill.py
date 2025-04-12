@@ -17,7 +17,7 @@ def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
             active_edges[k][0][0] = p[0] 
             V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
             active_edges[k][1][0] = p[0] 
-        if ymax[k] == y:
+        if ymax[k] == y+1:
             active_edges[k][0][1] = -1
             active_edges[k][1][1] = -1
             active_edges[k][0][0] = -1 
@@ -25,8 +25,8 @@ def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
 
 def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, ymin, ymax, y):
     y_total_min = np.astype(np.min(ymin), int)
+    x_total_min = np.astype(np.min(xmin), int)
     for k in range(0, K):
-        # protash 1
         #if y_total_min - 1 == y:
             #if ymin[k] == y + 1:
                 #active_points[k][1] = ymin[k]
@@ -43,6 +43,8 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
             ## protash 3
             #elif active_points[k][0] != -1 and m[k] != math.inf:
                 #active_points[k][0] = active_points[k][0] + 1/m[k]
+
+        # protash 1
         if ymin[k] == y + 1:
             active_points[k][1] = ymin[k]
             V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
@@ -51,12 +53,12 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
         elif active_points[k][0] != -1 and m[k] != math.inf:
             active_points[k][0] = active_points[k][0] + 1/m[k]
     # exclude horizontal lines, protash 2
-        if ymin[k] == ymax[k]:
+        if ymin[k] == ymax[k] or ymax[k] == y+1:
             active_points[k][1] = -1
             active_points[k][0] = -1
 
 def render_img(vertices, vcolors, depth, shading):
-    img = np.zeros((20, 20, 3))
+    img = np.zeros((512, 512, 3))
     img = np.astype(img, 'uint8')
     img.fill(255)
     M = img.shape[0]
@@ -114,12 +116,12 @@ def render_img(vertices, vcolors, depth, shading):
             for k in range(0, K):
                 if x == math.ceil(sorted_active_points[k][0]):
                     cross_count = cross_count + 1
-            print('x = ', x, 'cross count = ', cross_count)
+            #print('x = ', x, 'cross count = ', cross_count)
             if cross_count % 2 == 1:
                 if shading == "f":
                     img = f_shading(img, vertices, vcolors, y, x)
                 elif shading == "t":
-                    t_shading()
+                    t_shading(img, vertices, uv, textImg)
                 elif shading == "d":
                     t_shading()
                     #drawpixel(img, y, x)
@@ -150,13 +152,13 @@ def f_shading(img, vertices, vcolors, rows, cols):
     for i in range(0, 3):
         mean_color[i] = math.ceil(mean_color[i])
     mean_color = np.astype(mean_color, 'uint8')
-    print('mean color = ', mean_color)
+    #print('mean color = ', mean_color)
     img[img.shape[0] - rows][cols] = mean_color
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
     return img
 
-def t_shading():
-    return 0
+def t_shading(img, vertices, uv, textImg):
+    return img
 
 def drawpixel(img, rows, cols):
     print('debug')
