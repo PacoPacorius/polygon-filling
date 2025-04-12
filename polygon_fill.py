@@ -55,8 +55,12 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
             active_points[k][1] = -1
             active_points[k][0] = -1
 
-def render_img(img, vertices, vcolors, depth, shading):
-    M, N = img.shape
+def render_img(vertices, vcolors, depth, shading):
+    img = np.zeros((20, 20, 3))
+    img = np.astype(img, 'uint8')
+    img.fill(255)
+    M = img.shape[0]
+    N = img.shape[1]
     K = 3 # a triangle has 3 vertices
     ymax = np.zeros(3)
     ymin = np.zeros(3)
@@ -112,7 +116,13 @@ def render_img(img, vertices, vcolors, depth, shading):
                     cross_count = cross_count + 1
             print('x = ', x, 'cross count = ', cross_count)
             if cross_count % 2 == 1:
-                drawpixel(img, y, x)
+                if shading == "f":
+                    img = f_shading(img, vertices, vcolors, y, x)
+                elif shading == "t":
+                    t_shading()
+                elif shading == "d":
+                    t_shading()
+                    #drawpixel(img, y, x)
         
 
         # enhmerwnoume lista energwn akmwn
@@ -127,12 +137,29 @@ def render_img(img, vertices, vcolors, depth, shading):
         print('y = ', y+1)
         print('active edges = ', active_edges)
         print('active points = ', active_points)
+    return img
 
 
-def f_shading(img, vertices, vcolors):
-    for
-    return upd_img
+def f_shading(img, vertices, vcolors, rows, cols):
+    K = vertices.shape[0]
+    mean_color = np.zeros(3)
+    for i in range(0, 3):
+        for k in range(0, K):
+            mean_color[i] = mean_color[i] + vcolors[k][i]
+    mean_color = np.multiply(mean_color, [1/K])
+    for i in range(0, 3):
+        mean_color[i] = math.ceil(mean_color[i])
+    mean_color = np.astype(mean_color, 'uint8')
+    print('mean color = ', mean_color)
+    img[img.shape[0] - rows][cols] = mean_color
+    #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
+    return img
+
+def t_shading():
+    return 0
 
 def drawpixel(img, rows, cols):
-    img[img.shape[0] - rows][cols] = 0
+    print('debug')
+    img[img.shape[0] - rows][cols].fill(0)
     return 0
+
