@@ -61,6 +61,7 @@ def render_img(vertices, vcolors, depth, shading):
     img = np.zeros((512, 512, 3))
     img = np.astype(img, 'uint8')
     img.fill(255)
+    img2 = np.copy(img)
     M = img.shape[0]
     N = img.shape[1]
     K = 3 # a triangle has 3 vertices
@@ -112,25 +113,27 @@ def render_img(vertices, vcolors, depth, shading):
     for y in range(y_total_min, y_total_max):
         # sort lista oriakwn shmeiwn kata x (;;;) ;;__;;
         sorted_active_points = np.sort(active_points, 0)
+        sorted_active_points = np.astype(sorted_active_points, 'int')
         print('sorted active points = ', sorted_active_points)
         cross_count = 0
-        for x in range(x_total_min, x_total_max):
-            for k in range(0, K):
-                if x == math.ceil(sorted_active_points[k][0]):
-                    cross_count = cross_count + 1
-            #print('x = ', x, 'cross count = ', cross_count)
-            if cross_count % 2 == 1:
-                if shading == "f":
-                    img = f_shading(img, vertices, vcolors, y, x)
-                elif shading == "t":
-                    for k in range(0, K):
-                        uv[k][0] = vertices[k][0] / M
-                        uv[k][1] = vertices[k][1] / N
-                    img = t_shading(img, vertices, uv, y, x, cv.imread('fresque-saint-georges-2452226686.jpg'))
-                elif shading == "d":
-                    t_shading()
+        #for x in range(x_total_min, x_total_max):
+            #for k in range(0, K):
+                #if x == math.ceil(sorted_active_points[k][0]):
+                    #cross_count = cross_count + 1
+            ##print('x = ', x, 'cross count = ', cross_count)
+            #if cross_count % 2 == 1:
+                #if shading == "f":
+                    #img = f_shading(img, vertices, vcolors, y, x)
+                #elif shading == "t":
+                    #img2 = t_shading(img, vertices, uv, y, x, cv.imread('fresque-saint-georges-2452226686.jpg'))
+                #elif shading == "d":
                     #drawpixel(img, y, x)
         
+        if shading == "t":
+            # only two points will be active at a time, the inactive point with negative values will be at the beginning
+            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], sorted_active_points[2][0]), cv.imread('fresque-saint-georges-2452226686.jpg'))
+        elif shading == "f":
+            img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]))
 
         # enhmerwnoume lista energwn akmwn
         find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y)
@@ -154,11 +157,17 @@ def f_shading(img, vertices, vcolors, rows, cols):
         for k in range(0, K):
             mean_color[i] = mean_color[i] + vcolors[k][i]
     mean_color = np.multiply(mean_color, [1/K])
-    for i in range(0, 3):
-        mean_color[i] = math.ceil(mean_color[i])
+    mean_color = np.rint(mean_color)
     mean_color = np.astype(mean_color, 'uint8')
+    cols = np.array(cols)
     #print('mean color = ', mean_color)
-    img[img.shape[0] - rows][cols] = mean_color
+    #print('cols = ', cols)
+    #print('cols type = ', cols.dtype)
+    #print('cols size = ', cols.size)
+    if cols.size > 1:
+        img[img.shape[0] - rows][cols[0]:cols[-1]] = mean_color
+    elif cols.size == 1:
+        img[img.shape[0] - rows][cols] = mean_color
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
     return img
 
@@ -168,12 +177,18 @@ def t_shading(img, vertices, uv, rows, cols, textImg):
     M = img.shape[0]
     N = img.shape[1]
     # normalize trangle points to texture image coordinates
-    text_cols = K/M * cols
+    text_cols = np.multiply(cols, [K/M])
     text_rows = L/N * rows
-    text_cols = math.ceil(text_cols - 0.5)
+    text_cols = np.astype(np.rint(cols), 'int')
     text_rows = math.ceil(text_rows - 0.5)
 
-    img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
+    print('text_cols = ', text_cols)
+    print('text_cols size = ', text_cols.size)
+    print('text_cols type = ', text_cols.dtype)
+    if text_cols.size > 1:
+        img[img.shape[0] - rows][cols[0]:cols[-1]] = textImg[textImg.shape[0] - text_rows][text_cols[0]:text_cols[-1]]
+    elif text_cols.size == 1:
+        img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
     return img
 
 def drawpixel(img, rows, cols):

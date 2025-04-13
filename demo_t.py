@@ -12,6 +12,6 @@ vertices = np.multiply(vertices, [40])
 print('vertices = ', vertices)
 img2 = pf.render_img(vertices, vcolors, depth, shading)
 
-cv.imshow('window', img2)
+cv.imshow('with vectorization', img2)
 cv.moveWindow('window', 0, 0)
 cv.waitKey(0)
