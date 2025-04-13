@@ -13,7 +13,7 @@ vcolors = np.array([[180, 0, 200], [220, 0, 0], [0, 0, 170],
                     [255, 255, 255], [255, 255, 0,], [255, 255, 255],
                     [0, 255, 255], [255, 255, 255], [255, 255, 255]])
 depth = np.array([1, 10, 5])
-shading = np.array(["f", "f", "t"])   # "f"lat, "t"exture 
+shading = np.array(["f", "f", "f"])   # "f"lat, "t"exture 
 img = pf.render_img(faces, vertices, vcolors, depth, shading)
 
 cv.imshow('window', img)
