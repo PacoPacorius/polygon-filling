@@ -3,7 +3,23 @@ import numpy as np
 import cv2 as cv
 import math
 
+def render_img(faces, vertices, vcolors, depth, shading):
+    # initialize blank image
+    img = np.zeros((512, 512, 3))
+    img = np.astype(img, 'uint8')
+    img.fill(255)
 
+    L = vertices.shape[0]
+    K = faces.shape[0]
+    #polygon_fill(img, np.array([vertices[0:L:3], vertices[1:L:3], vertices[2:L:3]]), 
+                 #np.array([vcolors[0:L:3], vcolors[1:L:3], vcolors[2:L:3]]), shading[0:K])
+
+    # get sorted indices of the depth array, flip them to descending order. 
+    # this paints triangles in the correct depth order
+    for l in np.flip(depth.argsort()):
+        img = polygon_fill(img, np.array([vertices[3*l], vertices[3*l+1], vertices[3*l+2]]),
+                                np.array([vcolors[3*l], vcolors[3*l+1], vcolors[3*l+2]]), shading[l])
+    return img
 
 def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
     for k in range(0, K):
@@ -27,23 +43,6 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
     y_total_min = np.astype(np.min(ymin), int)
     x_total_min = np.astype(np.min(xmin), int)
     for k in range(0, K):
-        #if y_total_min - 1 == y:
-            #if ymin[k] == y + 1:
-                #active_points[k][1] = ymin[k]
-                #V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
-                #active_points[k][0] = p[0]
-            ## protash 3
-            #elif active_points[k][0] != -1 and m[k] != math.inf:
-                #active_points[k][0] = active_points[k][0] + 1/m[k]
-        #else:
-            #if ymin[k] == y + 1:
-                #active_points[k][1] = ymin[k]
-                #V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
-                #active_points[k][0] = p[0]
-            ## protash 3
-            #elif active_points[k][0] != -1 and m[k] != math.inf:
-                #active_points[k][0] = active_points[k][0] + 1/m[k]
-
         # protash 1
         if ymin[k] == y + 1:
             active_points[k][1] = ymin[k]
@@ -57,15 +56,11 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
             active_points[k][1] = -1
             active_points[k][0] = -1
 
-def render_img(vertices, vcolors, depth, shading):
-    img = np.zeros((512, 512, 3))
-    img = np.astype(img, 'uint8')
-    img.fill(255)
-    img2 = np.copy(img)
+def polygon_fill(img, vertices, vcolors, shading):
     M = img.shape[0]
     N = img.shape[1]
     K = 3 # a triangle has 3 vertices
-    norm_vertices = np.zeros((3, 2))
+    #norm_vertices = np.zeros((3, 2))
     uv = np.zeros((3, 2))
     ymax = np.zeros(3)
     ymin = np.zeros(3)
@@ -111,26 +106,16 @@ def render_img(vertices, vcolors, depth, shading):
 
     ### polygon fill loop ###
     for y in range(y_total_min, y_total_max):
-        # sort lista oriakwn shmeiwn kata x (;;;) ;;__;;
+        # sort lista oriakwn shmeiwn kata x  ;;__;;
         sorted_active_points = np.sort(active_points, 0)
         sorted_active_points = np.astype(sorted_active_points, 'int')
         print('sorted active points = ', sorted_active_points)
-        cross_count = 0
-        #for x in range(x_total_min, x_total_max):
-            #for k in range(0, K):
-                #if x == math.ceil(sorted_active_points[k][0]):
-                    #cross_count = cross_count + 1
-            ##print('x = ', x, 'cross count = ', cross_count)
-            #if cross_count % 2 == 1:
-                #if shading == "f":
-                    #img = f_shading(img, vertices, vcolors, y, x)
-                #elif shading == "t":
-                    #img2 = t_shading(img, vertices, uv, y, x, cv.imread('fresque-saint-georges-2452226686.jpg'))
-                #elif shading == "d":
-                    #drawpixel(img, y, x)
         
+        # fast pixel drawing
         if shading == "t":
-            # only two points will be active at a time, the inactive point with negative values will be at the beginning
+            # only two points will be active at a time, the inactive point 
+            # with negative values will be at the beginning, so we only need
+            # the range of the other two points' x coordinate
             img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], sorted_active_points[2][0]), cv.imread('fresque-saint-georges-2452226686.jpg'))
         elif shading == "f":
             img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]))
@@ -191,8 +176,4 @@ def t_shading(img, vertices, uv, rows, cols, textImg):
         img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
     return img
 
-def drawpixel(img, rows, cols):
-    print('debug')
-    img[img.shape[0] - rows][cols].fill(0)
-    return 0
 
