@@ -116,9 +116,9 @@ def polygon_fill(img, vertices, vcolors, shading):
             # only two points will be active at a time, the inactive point 
             # with negative values will be at the beginning, so we only need
             # the range of the other two points' x coordinate
-            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], sorted_active_points[2][0]), cv.imread('fresque-saint-georges-2452226686.jpg'))
+            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], sorted_active_points[2][0]+1), cv.imread('fresque-saint-georges-2452226686.jpg'))
         elif shading == "f":
-            img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]))
+            img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]+1))
 
         # enhmerwnoume lista energwn akmwn
         find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y)
