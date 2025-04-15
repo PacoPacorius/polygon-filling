@@ -22,7 +22,7 @@ def vector_inter(p1, p2, V1, V2, coord, dim):
 
     #print('lamda = ', lamda)
     V = lamda * V1 + (1-lamda) * V2
-    return V, p
+    return V, p, lamda
 
 
 

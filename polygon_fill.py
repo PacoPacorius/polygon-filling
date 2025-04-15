@@ -3,7 +3,7 @@ import numpy as np
 import cv2 as cv
 import math
 
-def render_img(faces, vertices, vcolors, depth, shading):
+def render_img(faces, vertices, vcolors, uvs, depth, shading):
     # initialize blank image
     img = np.zeros((512, 512, 3))
     img = np.astype(img, 'uint8')
@@ -11,14 +11,27 @@ def render_img(faces, vertices, vcolors, depth, shading):
 
     L = vertices.shape[0]
     K = faces.shape[0]
-    #polygon_fill(img, np.array([vertices[0:L:3], vertices[1:L:3], vertices[2:L:3]]), 
-                 #np.array([vcolors[0:L:3], vcolors[1:L:3], vcolors[2:L:3]]), shading[0:K])
 
+    print('depth.shape = ', depth.shape)
+
+    depth2 = np.zeros(faces.shape[0])
+    # calculate weighted center of depth for each triangle
+    for l in range(0, faces.shape[0]):
+        depth2[l] = (depth[faces[l][0]] + depth[faces[l][1]] + depth[faces[l][1]]) / 3
+    print('depth2 = ', depth2)
+    # depth follows indices of vertices array. depth[0] is the depth of the 
+    # vertex vertices[0]. 
+    # depth2 follows indices of faces array. depth2[0] is the center of mass
+    # of the first triangle in faces, faces[0]
     # get sorted indices of the depth array, flip them to descending order. 
-    # this paints triangles in the correct depth order
-    for l in np.flip(depth.argsort()):
-        img = polygon_fill(img, np.array([vertices[3*l], vertices[3*l+1], vertices[3*l+2]]),
-                                np.array([vcolors[3*l], vcolors[3*l+1], vcolors[3*l+2]]), shading[l])
+    # the resulting array's indices will indicating the order of the 
+    # triangles to be drawn.
+    # these indices will index faces which in turn will index vertices
+    for l in np.flip(depth2.argsort()):
+        img = polygon_fill(img, np.array([vertices[faces[l][0]], vertices[faces[l][1]], vertices[faces[l][2]]]),
+                                np.array([vcolors[faces[l][0]], vcolors[faces[l][1]], vcolors[faces[l][2]]]),
+                                np.array([uvs[faces[l][0]], uvs[faces[l][1]], uvs[faces[l][2]]]), 
+                                shading)
     return img
 
 def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
@@ -29,9 +42,9 @@ def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
             # pws kseroume poia tetagmenh antistoixei se poia tetmhmenh; grammikh paremvolh
             # "metaksy" dyo shmeiwn, alla h paremvolh ginetai panw se ena apo ta dyo shmeia,
             # etsi vriskoume poies htan oi arxikes tetmhmenes
-            V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymax[k], 2)
+            _, p, __ = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymax[k], 2)
             active_edges[k][0][0] = p[0] 
-            V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
+            _, p, __ = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
             active_edges[k][1][0] = p[0] 
         if ymax[k] == y + 1:
             active_edges[k][0][1] = -1
@@ -46,7 +59,7 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
         # protash 1
         if ymin[k] == y + 1:
             active_points[k][1] = ymin[k]
-            V, p = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
+            _, p, __ = vec_inter.vector_inter(vertices[k-1], vertices[k], 0, 0, ymin[k], 2)
             active_points[k][0] = p[0]
         # protash 3
         elif active_points[k][0] != -1 and m[k] != math.inf:
@@ -56,12 +69,13 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
             active_points[k][1] = -1
             active_points[k][0] = -1
 
-def polygon_fill(img, vertices, vcolors, shading):
+def polygon_fill(img, vertices, vcolors, uv, shading):
+    """
+    fill a single triangle
+    """
     M = img.shape[0]
     N = img.shape[1]
     K = 3 # a triangle has 3 vertices
-    #norm_vertices = np.zeros((3, 2))
-    uv = np.zeros((3, 2))
     ymax = np.zeros(3)
     ymin = np.zeros(3)
     xmax = np.zeros(3)
@@ -116,7 +130,10 @@ def polygon_fill(img, vertices, vcolors, shading):
             # only two points will be active at a time, the inactive point 
             # with negative values will be at the beginning, so we only need
             # the range of the other two points' x coordinate
-            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], sorted_active_points[2][0]+1), cv.imread('fresque-saint-georges-2452226686.jpg'))
+            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], 
+                                                        sorted_active_points[2][0]+1), 
+                            cv.imread('fresque-saint-georges-2452226686.jpg'),
+                            active_points, active_edges)
         elif shading == "f":
             img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]+1))
 
@@ -156,24 +173,19 @@ def f_shading(img, vertices, vcolors, rows, cols):
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
     return img
 
-def t_shading(img, vertices, uv, rows, cols, textImg):
-    K = textImg.shape[0]
-    L = textImg.shape[1]
-    M = img.shape[0]
-    N = img.shape[1]
-    # normalize trangle points to texture image coordinates
-    text_cols = np.multiply(cols, [K/M])
-    text_rows = L/N * rows
-    text_cols = np.astype(np.rint(cols), 'int')
-    text_rows = math.ceil(text_rows - 0.5)
+def t_shading(img, vertices, uv, rows, cols, textImg, active_points, active_edges):
 
-    print('text_cols = ', text_cols)
-    print('text_cols size = ', text_cols.size)
-    print('text_cols type = ', text_cols.dtype)
+    # calculate lamda and mu from active points and active adges
+
+    # calculate kappa from active points and to-be-drawn point inside triangle 
+
+    # reuse lamda, mu and kappa coefficients with uv coordinates to 
+    # determine pixel's color
+    
+
     if text_cols.size > 1:
         img[img.shape[0] - rows][cols[0]:cols[-1]] = textImg[textImg.shape[0] - text_rows][text_cols[0]:text_cols[-1]]
     elif text_cols.size == 1:
         img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
     return img
-
 
