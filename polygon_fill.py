@@ -132,10 +132,10 @@ def polygon_fill(img, vertices, vcolors, uv, shading):
             # the range of the other two points' x coordinate
             img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], 
                                                         sorted_active_points[2][0]+1), 
-                            cv.imread('fresque-saint-georges-2452226686.jpg'),
-                            active_points, active_edges)
+                            cv.imread('fresque-saint-georges-2452226686.jpg'))
         elif shading == "f":
-            img = f_shading(img, vertices, vcolors, y, range(sorted_active_points[1][0], sorted_active_points[2][0]+1))
+            img = f_shading(img, vertices, vcolors, y, 
+                            range(sorted_active_points[1][0], sorted_active_points[2][0]+1))
 
         # enhmerwnoume lista energwn akmwn
         find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y)
@@ -173,19 +173,67 @@ def f_shading(img, vertices, vcolors, rows, cols):
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
     return img
 
-def t_shading(img, vertices, uv, rows, cols, textImg, active_points, active_edges):
+def t_shading(img, vertices, uv, rows, cols, textImg):
 
-    # calculate lamda and mu from active points and active adges
+    a_screen = np.zeros(2)
+    b_screen = np.zeros(2)
+    a_text = np.zeros(2)
+    b_text = np.zeros(2)
 
-    # calculate kappa from active points and to-be-drawn point inside triangle 
+    # calculate lamda and mu with lerp
+    _, a_screen, lamda = vec_inter.vector_inter(vertices[0], vertices[1], np.array([1, 1]), np.array([1, 1]),
+                                                rows, 2)
+    _, b_screen, mu = vec_inter.vector_inter(vertices[0], vertices[2], np.array([1, 1]), np.array([1, 1]),
+                                                rows, 2)
+    # reuse lamda and mu in texture space
+    a_text = lamda * uv[0] + (1-lamda) * uv[1]
+    b_text = mu * uv[0] + (1-mu) * uv[2]
 
-    # reuse lamda, mu and kappa coefficients with uv coordinates to 
-    # determine pixel's color
+    print('a_screen = ', a_screen)
+    print('b_screen = ', b_screen)
+    print('a_text = ', a_text)
+    print('b_text = ', b_text)
+    # calculate kappa with lerp
+    print('cols = ', cols)
+    print('cols length = ', len(cols))
+    uv_p = np.zeros((len(cols), 2))
+    kappa = np.zeros(len(cols))
+    for i in range(0, len(cols)):
+        _, __, kappa[i] = vec_inter.vector_inter(a_screen, b_screen, np.array([1, 1]), np.array([1, 1]), 
+                                                  cols[i], 1)
+        # reuse kappa to find point in texture space
+        uv_p[i] = kappa[i] * a_text + (1-kappa[i]) * b_text
+        
+        # de-normalize, interpolate to nearest integer. textImg.shape[0]
+        # is rows (y), shape[1] is columns (x)
+        uv_p[i][0] = round(uv_p[i][0] * textImg.shape[1])
+        uv_p[i][1] = round(uv_p[i][1] * textImg.shape[0])
     
+    print('kappa =', kappa)
+    uv_p = np.astype(uv_p, 'int')
+    print('uv_p =', uv_p)
+
+    # prevent out-of-bounds edge case 
+    if uv_p[0][1] >= 1200:
+        #text_rows = uv_p[0][1] % 1200
+        text_rows = 1199
+    else:
+        text_rows = uv_p[0][1]
+    text_cols = np.zeros(len(cols))
+    for i in range(0, len(cols)):
+        if uv_p[i][0] >= 1200:
+            #text_cols[i] = uv_p[i][0] % 1200
+            text_cols[i] = 1199
+        else:
+            text_cols[i] = uv_p[i][0]
+
+    print('text_cols = ', text_cols)
+    text_cols = np.astype(text_cols, 'int')
+    print('text_rows = ', text_rows)
 
     if text_cols.size > 1:
-        img[img.shape[0] - rows][cols[0]:cols[-1]] = textImg[textImg.shape[0] - text_rows][text_cols[0]:text_cols[-1]]
+        img[img.shape[0] - rows][cols[0]:cols[-1]] = textImg[text_rows][text_cols[0:-1]]
     elif text_cols.size == 1:
-        img[img.shape[0] - rows][cols] = textImg[textImg.shape[0] - text_rows][text_cols]
+        img[img.shape[0] - rows][cols] = textImg[text_rows][text_cols[0]]
     return img
 
