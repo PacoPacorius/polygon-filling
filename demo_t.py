@@ -7,7 +7,6 @@ faces = data['t_pos_idx']
 vertices = data['v_pos2d']
 uvs = data['v_uvs']
 vcolors = data['v_clr']
-vcolors = np.multiply(vcolors, [255])
 depth = data['depth']
 shading = "t"
 print('data = ', data)

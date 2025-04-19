@@ -154,6 +154,7 @@ def polygon_fill(img, vertices, vcolors, uv, shading):
 
 def f_shading(img, vertices, vcolors, rows, cols):
     K = vertices.shape[0]
+    vcolors = np.multiply(vcolors, [255])
     mean_color = np.zeros(3)
     for i in range(0, 3):
         for k in range(0, K):
