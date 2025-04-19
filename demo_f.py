@@ -16,4 +16,5 @@ img = pf.render_img(faces, vertices, vcolors, uvs, depth, shading)
 cv.imshow('depth demo', img)
 cv.moveWindow('depth demo', 0, 0)
 cv.waitKey(0)
+cv.imwrite('flat_shading.png', img)
 

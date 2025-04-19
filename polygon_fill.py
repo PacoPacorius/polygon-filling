@@ -130,7 +130,7 @@ def polygon_fill(img, vertices, vcolors, uv, shading):
             # only two points will be active at a time, the inactive point 
             # with negative values will be at the beginning, so we only need
             # the range of the other two points' x coordinate
-            img = t_shading(img, vertices, uv, y, range(sorted_active_points[1][0], 
+            img = t_shading3(img, vertices, uv, y, range(sorted_active_points[1][0], 
                                                         sorted_active_points[2][0]+1), 
                             cv.imread('fresque-saint-georges-2452226686.jpg'))
         elif shading == "f":
@@ -157,7 +157,7 @@ def f_shading(img, vertices, vcolors, rows, cols):
     mean_color = np.zeros(3)
     for i in range(0, 3):
         for k in range(0, K):
-            mean_color[i] = mean_color[i] + vcolors[k][i]
+            mean_color[K-1-i] = mean_color[K-1-i] + vcolors[k][i]
     mean_color = np.multiply(mean_color, [1/K])
     mean_color = np.rint(mean_color)
     mean_color = np.astype(mean_color, 'uint8')
@@ -171,6 +171,162 @@ def f_shading(img, vertices, vcolors, rows, cols):
     elif cols.size == 1:
         img[img.shape[0] - rows][cols] = mean_color
     #print('img[', rows, '][', cols,'] = ', img[img.shape[0] - rows][cols])
+    return img
+
+def t_shading3(img, vertices, uv, y, cols, textImg):
+    """
+    Apply texture mapping using scanline algorithm with bilinear interpolation.
+
+    Parameters:
+    - img: target image to draw into
+    - vertices: triangle vertices in screen space
+    - uv: texture coordinates corresponding to vertices
+    - y: current scanline y-coordinate
+    - cols: range of x-coordinates to fill on current scanline
+    - textImg: texture image to sample from
+    """
+    # Get texture dimensions
+    tex_height, tex_width = textImg.shape[0], textImg.shape[1]
+
+    # Convert vertices and uv to numpy arrays for easier manipulation
+    vertices = np.array(vertices, dtype=float)
+    uv = np.array(uv, dtype=float)
+
+    # Sort vertices by y-coordinate to identify top, middle, bottom
+    sorted_indices = np.argsort([v[1] for v in vertices])
+    v_top, v_mid, v_bot = vertices[sorted_indices]
+    uv_top, uv_mid, uv_bot = uv[sorted_indices]
+
+    # Find intersection points on each edge with current scanline
+    def find_intersection(v1, v2, uv1, uv2, y_val):
+        # If edge is horizontal, no meaningful intersection
+        if abs(v1[1] - v2[1]) < 1e-6:
+            return None, None
+
+        # Calculate interpolation factor t
+        t = (y_val - v2[1]) / (v1[1] - v2[1])
+
+        # If t is outside [0,1], the scanline doesn't intersect this edge
+        if t < 0 or t > 1:
+            return None, None
+
+        # Calculate intersection point x-coordinate
+        x = v2[0] + t * (v1[0] - v2[0])
+
+        # Calculate corresponding texture coordinate
+        tex_coord = uv2 + t * (uv1 - uv2)
+
+        return x, tex_coord
+
+    # Find intersections with all three edges
+    intersections = []
+
+    # Edge: top to middle
+    x1, tex1 = find_intersection(v_top, v_mid, uv_top, uv_mid, y)
+    if x1 is not None:
+        intersections.append((x1, tex1))
+
+    # Edge: top to bottom
+    x2, tex2 = find_intersection(v_top, v_bot, uv_top, uv_bot, y)
+    if x2 is not None:
+        intersections.append((x2, tex2))
+
+    # Edge: middle to bottom
+    x3, tex3 = find_intersection(v_mid, v_bot, uv_mid, uv_bot, y)
+    if x3 is not None:
+        intersections.append((x3, tex3))
+
+    # Need exactly 2 intersections to draw a scanline
+    if len(intersections) != 2:
+        return img
+
+    # Sort intersections by x-coordinate
+    intersections.sort(key=lambda i: i[0])
+
+    # Get left and right edge points
+    x_left, tex_left = intersections[0]
+    x_right, tex_right = intersections[1]
+
+    # Convert cols to list for easier processing
+    cols = list(cols)
+
+    # Process each pixel in the scanline
+    for x in cols:
+        # Skip if outside the range of intersection points
+        if x < x_left or x > x_right:
+            continue
+
+        # Calculate interpolation factor for this pixel
+        if abs(x_right - x_left) < 1e-6:  # Avoid division by zero
+            t = 0
+        else:
+            t = (x - x_left) / (x_right - x_left)
+
+        # Interpolate texture coordinate
+        tex_coord = tex_left + t * (tex_right - tex_left)
+
+        # Convert to texture pixel coordinates
+        tx = int(tex_coord[0] * (tex_width - 1))
+        ty = int(tex_coord[1] * (tex_height - 1))
+
+        # Clamp to texture boundaries
+        tx = max(0, min(tex_width - 1, tx))
+        ty = max(0, min(tex_height - 1, ty))
+
+        # Sample texture and set pixel
+        img[img.shape[0] - y][x] = textImg[ty][tx]
+
+    return img
+
+def t_shading2(img, vertices, uv, rows, cols, textImg):
+    # Get texture dimensions
+    tex_height, tex_width = textImg.shape[0], textImg.shape[1]
+
+    # Calculate edge interpolation points on the current scanline
+    # Find points where the scanline intersects the triangle edges
+    _, a_screen, lamda = vec_inter.vector_inter2(vertices[0], vertices[1], np.array([1, 1]), np.array([1, 1]),
+                                              rows, 2)
+
+    _, b_screen, mu = vec_inter.vector_inter2(vertices[0], vertices[2], np.array([1, 1]), np.array([1, 1]),
+                                           rows, 2)
+
+    # Calculate texture coordinates at these edge intersection points
+    a_text = lamda * uv[0] + (1-lamda) * uv[1]
+    b_text = mu * uv[0] + (1-mu) * uv[2]
+
+    # Get array of x-coordinates along the scanline
+    cols_array = np.array(list(cols))
+
+    # If no pixels to draw, return early
+    if len(cols_array) == 0:
+        return img
+
+    # Calculate the proportional distance for each pixel along the scanline
+    if a_screen[0] != b_screen[0]:  # Avoid division by zero
+        # Calculate interpolation factors for each pixel on the scanline
+        kappas = (cols_array - a_screen[0]) / (b_screen[0] - a_screen[0])
+        # Clamp interpolation factors to [0,1] range to handle edge cases
+        kappas = np.clip(kappas, 0, 1)
+    else:
+        # If both edge points have the same x-coordinate, use constant value
+        kappas = np.zeros(len(cols_array))
+
+    # Interpolate texture coordinates for each pixel on the scanline
+    # Vectorized version of interpolating between a_text and b_text
+    uv_p = np.outer(1-kappas, a_text) + np.outer(kappas, b_text)
+
+    # Convert to pixel coordinates in texture space
+    text_cols = np.round(uv_p[:, 0] * (tex_width - 1)).astype(int)
+    text_rows = np.round(uv_p[:, 1] * (tex_height - 1)).astype(int)
+
+    # Clamp texture coordinates to valid range
+    text_cols = np.clip(text_cols, 0, tex_width - 1)
+    text_rows = np.clip(text_rows, 0, tex_height - 1)
+
+    # Apply texture to each pixel in the scanline
+    for i, x in enumerate(cols_array):
+        img[img.shape[0] - rows][x] = textImg[text_rows[i]][text_cols[i]]
+
     return img
 
 def t_shading(img, vertices, uv, rows, cols, textImg):
@@ -190,42 +346,64 @@ def t_shading(img, vertices, uv, rows, cols, textImg):
     b_text = mu * uv[0] + (1-mu) * uv[2]
 
     print('a_screen = ', a_screen)
-    print('b_screen = ', b_screen)
+    print('lamda = ', lamda)
     print('a_text = ', a_text)
+    print('b_screen = ', b_screen)
+    print('mu = ', mu)
     print('b_text = ', b_text)
     # calculate kappa with lerp
     print('cols = ', cols)
     print('cols length = ', len(cols))
     uv_p = np.zeros((len(cols), 2))
     kappa = np.zeros(len(cols))
+    text_cols = np.zeros(len(cols))
     for i in range(0, len(cols)):
         _, __, kappa[i] = vec_inter.vector_inter(a_screen, b_screen, np.array([1, 1]), np.array([1, 1]), 
                                                   cols[i], 1)
         # reuse kappa to find point in texture space
-        uv_p[i] = kappa[i] * a_text + (1-kappa[i]) * b_text
+        if kappa[i] == math.inf:
+            uv_p[i] = a_text
+        else:
+            uv_p[i] = kappa[i] * a_text + (1-kappa[i]) * b_text
         
         # de-normalize, interpolate to nearest integer. textImg.shape[0]
         # is rows (y), shape[1] is columns (x)
-        uv_p[i][0] = round(uv_p[i][0] * textImg.shape[1])
-        uv_p[i][1] = round(uv_p[i][1] * textImg.shape[0])
-    
-    print('kappa =', kappa)
+        text_cols[i] = round(uv_p[i][0] * textImg.shape[1])
+        text_rows = round(uv_p[i][1] * textImg.shape[0])
+        if text_cols[i] > 1200 and text_cols[i] == 0:
+            print('=== texture map limits exceeded! ===')
+            print('a_screen = ', a_screen)
+            print('lamda = ', lamda)
+            print('a_text = ', a_text)
+            print('b_screen = ', b_screen)
+            print('mu = ', mu)
+            print('b_text = ', b_text)
+            print('texture map limits exceeded! text_cols = ', text_cols[i], '\tuv_cols = ', uv_p[i][0])
+            print('kappa =', kappa[i])
+            input()
+        if text_rows > 1200 and text_rows == 0:
+            print('=== texture map limits exceeded! ===')
+            print('a_screen = ', a_screen)
+            print('lamda = ', lamda)
+            print('a_text = ', a_text)
+            print('b_screen = ', b_screen)
+            print('mu = ', mu)
+            print('b_text = ', b_text)
+            print('texture map limits exceeded! text_rows = ', text_rows, '\tuv_rows = ', uv_p[i][1])
+            print('kappa =', kappa[i])
+            input()
+
     uv_p = np.astype(uv_p, 'int')
     print('uv_p =', uv_p)
 
     # prevent out-of-bounds edge case 
-    if uv_p[0][1] >= 1200:
-        #text_rows = uv_p[0][1] % 1200
-        text_rows = 1199
-    else:
-        text_rows = uv_p[0][1]
-    text_cols = np.zeros(len(cols))
+    if text_rows >= 1200:
+        #text_rows = 1199
+        text_rows = uv_p[0][1] % 1200
     for i in range(0, len(cols)):
-        if uv_p[i][0] >= 1200:
-            #text_cols[i] = uv_p[i][0] % 1200
-            text_cols[i] = 1199
-        else:
-            text_cols[i] = uv_p[i][0]
+        if text_cols[i] >= 1200:
+        #    text_cols[i] = 1199
+            text_cols[i] = uv_p[i][0] % 1200
 
     print('text_cols = ', text_cols)
     text_cols = np.astype(text_cols, 'int')
