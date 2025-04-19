@@ -53,8 +53,8 @@ def find_active_edges(active_edges, vertices, K, xmin, xmax, ymin, ymax, y):
             active_edges[k][1][0] = -1 
 
 def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, ymin, ymax, y):
-    y_total_min = np.astype(np.min(ymin), int)
-    x_total_min = np.astype(np.min(xmin), int)
+    #y_total_min = np.astype(np.min(ymin), int)
+    #x_total_min = np.astype(np.min(xmin), int)
     for k in range(0, K):
         # protash 1
         if ymin[k] == y + 1:
@@ -64,7 +64,7 @@ def find_active_points(active_points, active_edges, vertices, m, K, xmin, xmax, 
         # protash 3
         elif active_points[k][0] != -1 and m[k] != math.inf:
             active_points[k][0] = active_points[k][0] + 1/m[k]
-    # exclude horizontal lines, protash 2
+        # exclude horizontal lines, protash 2
         if ymin[k] == ymax[k] or ymax[k] == y + 1:
             active_points[k][1] = -1
             active_points[k][0] = -1
