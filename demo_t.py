@@ -10,11 +10,10 @@ vcolors = data['v_clr']
 depth = data['depth']
 shading = "t"
 print('data = ', data)
-input()
 img = pf.render_img(faces, vertices, vcolors, uvs, depth, shading)
 
 cv.imshow('depth demo', img)
 cv.moveWindow('depth demo', 0, 0)
 cv.waitKey(0)
-cv.imwrite('tex3_inter1.png', img)
+cv.imwrite('texture_shading.png', img)
 

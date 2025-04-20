@@ -5,15 +5,15 @@ def vector_inter(p1, p2, V1, V2, coord, dim):
     p = np.zeros(2)
 
     if dim == 1:
-        if round(p1[0]) != round(p2[0]):
+        if abs(p1[0] - p2[0]) > 1e-6:
             lamda = - (p2[0] - coord) / (p1[0] - p2[0])
         else:
-            lamda = math.inf
+            lamda = 0
         p[1] = lamda * p1[1] + (1-lamda) * p2[1]
         p[0] = coord
 
     elif dim == 2:
-        if round(p1[1]) != round(p2[1]):
+        if abs(p1[1] - p2[1]) > 1e-6:
             lamda = - (p2[1] - coord) / (p1[1] - p2[1])
         else:
             lamda = 0
