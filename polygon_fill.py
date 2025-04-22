@@ -176,18 +176,7 @@ def f_shading(img, vertices, vcolors, rows, cols):
 
 
 def t_shading(img, vertices, uv, y, cols, textImg):
-    """
-    Apply texture mapping using scanline algorithm with bilinear interpolation.
-
-    Parameters:
-    - img: target image to draw into
-    - vertices: triangle vertices in screen space
-    - uv: texture coordinates corresponding to vertices
-    - y: current scanline y-coordinate
-    - cols: range of x-coordinates to fill on current scanline
-    - textImg: texture image to sample from
-    """
-    # Get texture dimensions
+    ## Get texture dimensions
     tex_height, tex_width = textImg.shape[0], textImg.shape[1]
 
     # Sort vertices by y-coordinate to identify top, middle, bottom
@@ -256,12 +245,12 @@ def t_shading(img, vertices, uv, y, cols, textImg):
 
         # Calculate interpolation factor for this pixel
         if abs(x_right - x_left) < 1e-6:  # Avoid division by zero
-            t = 0
+            kappa = 0
         else:
-            t = (x - x_left) / (x_right - x_left)
+            kappa = (x - x_left) / (x_right - x_left)
 
         # Interpolate texture coordinate
-        tex_coord = tex_left + t * (tex_right - tex_left)
+        tex_coord = tex_left + kappa * (tex_right - tex_left)
         # Convert to texture pixel coordinates
         tx = int(tex_coord[0] * (tex_width - 1))
         ty = int(tex_coord[1] * (tex_height - 1))
