@@ -13,8 +13,8 @@
     colorlinks=true, linkcolor=blue, filecolor=magenta,      
     urlcolor=cyan, 
     pdfinfo = {%
-        Title = Συστήματα Πολυμέσων Υλοποίηση GSM 06.10,
-        Author = {Χρήστος Μάριος Περδίκης, Γιώργος Βακασίρης},
+        Title = Γραφική, Πλήρωση Πολυγώνων
+        Author = {Χρήστος Μάριος Περδίκης},
         Producer = XeLaTeX,
     } 
 }
@@ -207,12 +207,27 @@ $tex\_coord$ στο texture map. Οι συν\-τε\-ταγμένες του $tex
 η κατακόρυφη συνιστώσα του texture image δεν είναι.
 
 Σημείωση: δυστυχώς το αποτέλεσμα δεν είναι τέλειο. Υπάρχουν μερικές
-οριζόντιες γραμμές---ασυνέ\-χειες στο texture της τελικής εικόνας αλλά δεν γνωρίζω
+οριζόντιες γραμμές---ασυνέ\-χειες στο texture της τελικής εικόνας του
+αποτελέσματoς του texture map shading, αλλά δεν γνωρίζω
 σε τι οφείλονται. Επίσης δεν κατάφερα να 
 χρησιμοποιήσω την συνάρτηση παρεμβολής \verb|vector_inter| επιτυχώς εδώ στη 
 συνάρτηση \verb|t_shading|, έκα\-να γραμμική παρεμβολή με νέο κώδικα μέσα
-στην \verb|t_shading|.
+στην \verb|t_shading|. Ακολουθούν οι εικόνες---αποτελέσματα του προγράμματος:
 
+\begin{figure}
+    \centering
+    \begin{subcaptionblock}{.45\textwidth}
+        \includegraphics[width=\textwidth]{../flat_shading.png}
+        \caption{Αποτέλεσμα διαδικασίας flat shading}
+    \end{subcaptionblock}
+    \centering
+    \begin{subcaptionblock}{.45\textwidth}
+        \includegraphics[width=\textwidth]{../texture_shading.png}
+        \caption{Αποτέλεσμα διαδικασίας texture map shading}
+    \end{subcaptionblock}
+\end{figure}
+
+\newpage
 
 \vspace{2em}
 \centering
